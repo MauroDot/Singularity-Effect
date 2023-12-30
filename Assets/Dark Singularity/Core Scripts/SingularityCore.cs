@@ -1,18 +1,32 @@
 ﻿using UnityEngine;
 [RequireComponent(typeof(SphereCollider))]
+[RequireComponent(typeof(SphereCollider))]
 public class SingularityCore : MonoBehaviour
 {
-    //This script is responsible for what happens when the pullable objects reach the core
-    //by default, the game objects are simply turned off
-    //as this is much more performant than destroying the objects
-    void OnTriggerStay (Collider other) {
-        if(other.GetComponent<SingularityPullable>()){
-            other.gameObject.SetActive(false);
+    public float teleportationRange = 100f; // Set this to the desired range
+
+    void OnTriggerStay(Collider other)
+    {
+        if (other.GetComponent<SingularityPullable>())
+        {
+            if (other.CompareTag("Player")) // Check if the object is the player
+            {
+                Vector3 randomDirection = Random.insideUnitSphere * teleportationRange;
+                randomDirection += transform.position; // Ensure the random position is relative to the singularity's position
+
+                other.transform.position = randomDirection; // Teleport the player
+            }
+            else
+            {
+                other.gameObject.SetActive(false); // Deactivate other objects
+            }
         }
     }
 
-    void Awake(){
-        if(GetComponent<SphereCollider>()){
+    void Awake()
+    {
+        if (GetComponent<SphereCollider>())
+        {
             GetComponent<SphereCollider>().isTrigger = true;
         }
     }

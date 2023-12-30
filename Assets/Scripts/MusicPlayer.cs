@@ -1,85 +1,79 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Collections.Generic;
 
 public class MusicPlayer : MonoBehaviour
 {
     public AudioSource audioSource;
-    public Dropdown songDropdown;
-    public Text currentSongText;
-    [SerializeField]
-    private List<AudioClip> playlist = new List<AudioClip>(); // Serialize this field to edit in inspector
-    
+    public List<AudioClip> playlist = new List<AudioClip>();
+    public Button playPauseButton;
+    public Button skipButton;
+    public Button previousButton;
+    public Text songTitleText;
+    public Slider volumeSlider; // Reference to the volume slider
+
     private int currentTrackIndex = 0;
+    private bool isPlaying = false;
+
     void Start()
     {
-        PopulateDropdownWithSongs();
-        UpdateSongDisplay();
-    }
-
-    // Populate the dropdown with song names
-    private void PopulateDropdownWithSongs()
-    {
-        songDropdown.ClearOptions();
-        List<string> songNames = new List<string>();
-        foreach (var song in playlist)
+        if (playlist.Count > 0)
         {
-            songNames.Add(song.name);
+            PlayTrack(currentTrackIndex);
         }
-        songDropdown.AddOptions(songNames);
+
+        playPauseButton.onClick.AddListener(TogglePlayPause);
+        skipButton.onClick.AddListener(SkipTrack);
+        previousButton.onClick.AddListener(PreviousTrack);
+
+        // Initialize the volume slider
+        volumeSlider.value = audioSource.volume;
+        volumeSlider.onValueChanged.AddListener(AdjustVolume);
     }
 
-    // Update the text to show the current song
-    private void UpdateSongDisplay()
+    void PlayTrack(int trackIndex)
     {
-        currentSongText.text = playlist[currentTrackIndex].name;
-    }
+        if (trackIndex < 0 || trackIndex >= playlist.Count) return;
 
-    // Play the selected song
-    public void PlaySong()
-    {
-        audioSource.clip = playlist[currentTrackIndex];
+        audioSource.clip = playlist[trackIndex];
         audioSource.Play();
-        UpdateSongDisplay();
+        songTitleText.text = playlist[trackIndex].name;
+        isPlaying = true;
     }
 
-    // Go to the next song
-    public void SkipSong()
+    void TogglePlayPause()
     {
-        currentTrackIndex = (currentTrackIndex + 1) % playlist.Count;
-        UpdateSongSelection();
-        PlaySong();
-    }
-
-    // Go to the previous song
-    // Go to the previous song
-    public void PreviousSong()
-    {
-        if (currentTrackIndex == 0)
+        if (isPlaying)
         {
-            currentTrackIndex = playlist.Count - 1;
+            audioSource.Pause();
         }
         else
         {
-            currentTrackIndex--;
+            audioSource.Play();
         }
-        UpdateSongSelection();
-        PlaySong();
+        isPlaying = !isPlaying;
     }
 
-    // This will be called when selecting a song from the dropdown
-    public void SelectSongFromDropdown(int index)
+    void SkipTrack()
     {
-        currentTrackIndex = index;
-        PlaySong();
+        currentTrackIndex = (currentTrackIndex + 1) % playlist.Count;
+        PlayTrack(currentTrackIndex);
     }
 
-    // Update dropdown selection and song display text
-    private void UpdateSongSelection()
+    void PreviousTrack()
     {
-        songDropdown.value = currentTrackIndex;
-        songDropdown.RefreshShownValue();
-        UpdateSongDisplay();
+        currentTrackIndex--;
+        if (currentTrackIndex < 0)
+        {
+            currentTrackIndex = playlist.Count - 1;
+        }
+        PlayTrack(currentTrackIndex);
+    }
+
+    // Method to adjust the volume
+    void AdjustVolume(float newVolume)
+    {
+        audioSource.volume = newVolume;
     }
 }

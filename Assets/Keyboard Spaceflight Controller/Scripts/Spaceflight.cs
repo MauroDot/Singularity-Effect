@@ -11,6 +11,9 @@ public class Spaceflight : MonoBehaviour
     public float MaxSpeed = 40f;
     public float MaxAngularAcceleration = 30f;
     public float MaxAcceleration = 4f;
+    public float boostMultiplier = 2f; // Speed boost multiplier
+    private bool isBoosting = false;
+    public Text boostIndicatorText; // Assign this in the inspector
 
     public float TurnFactor = 1f;
 
@@ -25,9 +28,16 @@ public class Spaceflight : MonoBehaviour
 
     private Rigidbody rb;
 
+    private bool isMoving = false;
+
+    public AudioSource shipAudioSource;
+    public float minPitch = 0.5f; // Minimum pitch when the ship is stationary
+    public float maxPitch = 1.2f;  // Maximum pitch at full speed
+
     void Start()
     {
         rb = GetComponent<Rigidbody>();
+        shipAudioSource.Play(); // Start playing the sound
     }
 
     void Update()
@@ -63,6 +73,20 @@ public class Spaceflight : MonoBehaviour
         {
             rb.AddTorque(-transform.up * MaxAngularAcceleration * rotationSensitivity * Time.deltaTime);
         }
+
+        // Check for Left Shift key for speed boost
+        isBoosting = Input.GetKey(KeyCode.LeftShift);
+
+        // Update boost indicator text
+        if (boostIndicatorText != null)
+        {
+            boostIndicatorText.text = isBoosting ? "Boost On" : "Boost Off";
+        }
+
+        // Adjust the pitch based on the ship's velocity
+        float effectiveMaxSpeed = isBoosting ? MaxSpeed * boostMultiplier : MaxSpeed;
+        float speedFraction = rb.velocity.magnitude / effectiveMaxSpeed;
+        shipAudioSource.pitch = Mathf.Lerp(minPitch, maxPitch, speedFraction);
     }
     void FixedUpdate()
     {
@@ -87,10 +111,14 @@ public class Spaceflight : MonoBehaviour
         Vector3 strafingForce = transform.right * strafeInput * MaxSpeed * Time.fixedDeltaTime;
         rb.AddForce(strafingForce, ForceMode.VelocityChange);
 
-        // Apply acceleration
-        Vector3 vDiff = transform.up * MaxSpeed * ControlThrust - rb.velocity;
-        if (vDiff.magnitude > MaxAcceleration * (1f - stunned))
-            vDiff *= MaxAcceleration * (1f - stunned) / vDiff.magnitude;
+        // Apply acceleration with boost
+        float effectiveMaxSpeed = isBoosting ? MaxSpeed * boostMultiplier : MaxSpeed;
+        Vector3 vDiff = transform.up * effectiveMaxSpeed * ControlThrust - rb.velocity;
+        float effectiveMaxAcceleration = isBoosting ? MaxAcceleration * boostMultiplier : MaxAcceleration;
+        if (vDiff.magnitude > effectiveMaxAcceleration * (1f - stunned))
+        {
+            vDiff *= effectiveMaxAcceleration * (1f - stunned) / vDiff.magnitude;
+        }
         rb.AddForce(vDiff, ForceMode.VelocityChange);
 
         // Apply turning torque
@@ -105,7 +133,6 @@ public class Spaceflight : MonoBehaviour
             hull.localRotation = Quaternion.Euler(0f, ControlHorizontal * -1f * maxTilt, 0f);
         }
     }
-
     void OnCollisionEnter(Collision collision)
     {
         stunned = 1f;

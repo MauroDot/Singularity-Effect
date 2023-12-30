@@ -64,7 +64,8 @@ public class Singularity : MonoBehaviour
 
     void OnTriggerStay(Collider other)
     {
-        if (other.attachedRigidbody && other.GetComponent<SingularityPullable>())
+        SingularityPullable pullableComponent = other.GetComponent<SingularityPullable>();
+        if (pullableComponent != null && pullableComponent.enabled && pullableComponent.pullable)
         {
             float gravityIntensity = Vector3.Distance(transform.position, other.transform.position) / m_GravityRadius;
             other.attachedRigidbody.AddForce((transform.position - other.transform.position) * gravityIntensity * other.attachedRigidbody.mass * GRAVITY_PULL * Time.smoothDeltaTime);
